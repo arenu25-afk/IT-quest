@@ -1,0 +1,21 @@
+create or replace function get_random_quizzes(target_stage text, quiz_limit int)
+returns setof quizzes
+language plpgsql
+as $$
+begin
+  -- 1-final（ラスボス）の場合はすべてのステージからランダム取得
+  if target_stage = '1-final' then
+    return query
+    select * from quizzes
+    order by random()
+    limit quiz_limit;
+  else
+    -- それ以外のステージは指定されたステージ（1-1(sub)なら1-1に変換）からランダム取得
+    return query
+    select * from quizzes
+    where stage = replace(target_stage, ' (sub)', '')
+    order by random()
+    limit quiz_limit;
+  end if;
+end;
+$$;
