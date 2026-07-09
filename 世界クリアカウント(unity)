@@ -1,0 +1,35 @@
+/// <summary>
+/// 世界を救った（エリアクリア）時に、カウントを+1する
+/// </summary>
+public IEnumerator ClearAreaCoroutine(int id)
+{
+    // 現在の「world_clear_count」に1を足すSQL命令をSupabaseに送る（RPCを使わずに直接PATCHで更新）
+    // ※分かりやすくするため、事前にUnity側で取得した「現在のクリア回数 + 1」の数値を送る方法にします
+    
+    int nextClearCount = currentWorldClearCount + 1; // 事前に保存しておいた現在の回数に+1する
+
+    string url = $"{supabaseUrl}/rest/v1/player?id=eq.{id}";
+    string jsonPayload = "{\"world_clear_count\":" + nextClearCount + "}";
+    byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+
+    using (UnityWebRequest request = new UnityWebRequest(url, "PATCH")) // データを一部更新するときはPATCH
+    {
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        SetupHeaders(request);
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log($"🎉 世界を救った！通算クリア回数: {nextClearCount}回");
+            currentWorldClearCount = nextClearCount; // Unity側の変数も更新
+            
+            // ここで「おめでとう！世界は救われた！」などのリザルト画面に遷移させる
+        }
+        else
+        {
+            Debug.LogError("クリア回数の更新に失敗しました: " + request.error);
+        }
+    }
+}
