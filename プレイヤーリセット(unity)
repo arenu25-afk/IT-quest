@@ -3,45 +3,96 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class BattleManager : MonoBehaviour
+public class QuizManager : MonoBehaviour
 {
-    // あなたのSupabaseのURL
-    private string supabaseUrl = "https://wfbstrbvfjzwrhyzxvfs.supabase.co/rest/v1/rpc/initialize_player_battle";
-    // あなたのSupabaseのAnon Key（既存のコードからコピーしてください）
-    private string anonKey = "YOUR_SUPABASE_ANON_KEY"; 
+    [Header("Supabase設定")]
+    [SerializeField] private string supabaseUrl = "https://wfbstrbvfjzwrhyzxvfs.supabase.co";
+    [SerializeField] private string anonKey = "ここにあなたのANON_KEYを貼り付けてください";
 
-    // バトル開始時にこれを呼び出す
-    public void StartNewBattle(int playerId)
+    [Header("現在のステータス")]
+    public int playerId = 1;         // テスト用のプレイヤーID
+    public int playerCurrentHp;     // プレイヤーの現在のHP
+    public int playerMaxHp;         // プレイヤーの最大HP（Supabaseから返ってきた値を入れる）
+
+    void Start()
     {
-        StartCoroutine(InitializePlayerBattleCoroutine(playerId));
+        // ゲーム開始時に通常ステージ（HP 800）として初期化する場合
+        StartCoroutine(InitializePlayerBattleCoroutine(playerId, "normal"));
+
+        // もしサブボス戦ならこう呼び出します ➔ "sub_boss" (HP 2000)
+        // もしラスボス戦ならこう呼び出します ➔ "last_boss" (HP 3000)
     }
 
-    private IEnumerator InitializePlayerBattleCoroutine(int playerId)
+    /// <summary>
+    /// 新・プレイヤーのバトル初期化（ステージの種類に合わせて全回復・リセット）
+    /// </summary>
+    /// <param name="id">プレイヤーID</param>
+    /// <param name="stageType">"normal"、"sub_boss"、"last_boss" のいずれか</param>
+    private IEnumerator InitializePlayerBattleCoroutine(int id, string stageType)
     {
-        // 送信するJSONデータ（{"target_id": 1} のような形）
-        string jsonPayload = "{\"target_id\":" + playerId + "}";
+        string url = $"{supabaseUrl}/rest/v1/rpc/initialize_player_battle";
+        
+        // パラメータに「stage_type」を追加してJSONを作成
+        string jsonPayload = "{\"target_id\":" + id + ", \"stage_type\":\"" + stageType + "\"}";
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
 
-        using (UnityWebRequest request = new UnityWebRequest(supabaseUrl, "POST"))
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
-            
-            // ヘッダーの設定
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.SetRequestHeader("apikey", anonKey);
-            request.SetRequestHeader("Authorization", "Bearer " + anonKey);
+            SetupHeaders(request);
 
             yield return request.SendWebRequest();
 
             if (request.result == UnityWebRequest.Result.Success)
             {
-                Debug.Log("プレイヤーのHP全回復とリセットに成功しました！");
+                Debug.Log($"Supabase: プレイヤーHPを {stageType} 用にリセット・全回復に成功！");
+                
+                // 【重要】Supabaseから自動設定された最新のHPデータが返ってくるので、それを読み取ってUnity側に同期させる
+                string responseText = request.downloadHandler.text;
+                ParsePlayerStatus(responseText);
             }
             else
             {
-                Debug.LogError("リセット失敗: " + request.error);
+                Debug.LogError("Supabaseリセット失敗: " + request.error);
             }
         }
+    }
+
+    /// <summary>
+    /// Supabaseから返ってきた最新のHPをUnityの変数にセットする（簡易解析）
+    /// </summary>
+    private void ParsePlayerStatus(string json)
+    {
+        // 簡易的にJSONの文字列から max_hp と current_hp の数値を抜き出します
+        // （本来はJsonUtilityやLitJsonなどを使うとより綺麗に書けます）
+        try
+        {
+            // 例: "max_hp":800 などの部分を検索してパース
+            playerMaxHp = int.Parse(GetJsonValue(json, "max_hp"));
+            playerCurrentHp = int.Parse(GetJsonValue(json, "current_hp"));
+
+            Debug.Log($"Unity側の同期完了 - 現在HP: {playerCurrentHp} / 最大HP: {playerMaxHp}");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("HPデータの解析に失敗しました: " + e.Message);
+        }
+    }
+
+    private string GetJsonValue(string json, string key)
+    {
+        string searchKey = $"\"{key}\":";
+        int startIndex = json.IndexOf(searchKey) + searchKey.Length;
+        int endIndex = json.IndexOf(",", startIndex);
+        if (endIndex == -1) endIndex = json.IndexOf("}", startIndex);
+        return json.Substring(startIndex, endIndex - startIndex).Trim();
+    }
+
+    private void SetupHeaders(UnityWebRequest request)
+    {
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("apikey", anonKey);
+        request.SetRequestHeader("Authorization", "Bearer " + anonKey);
     }
 }
