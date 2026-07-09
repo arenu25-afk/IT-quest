@@ -1,0 +1,55 @@
+[Header("現在の対戦モンスター情報")]
+public string monsterName;
+public bool isSubBoss;
+public bool isLastBoss;
+public int requiredCorrectCount; // クリアに必要な正解数
+private int currentCorrectCount = 0;
+
+/// <summary>
+/// ステージ名（1-1、1-1 (sub) など）を元に、Supabaseからモンスター情報を取得してルールを自動決定する
+/// </summary>
+public IEnumerator FetchMonsterAndSetRulesCoroutine(string stageName)
+{
+    currentCorrectCount = 0; // 正解カウントをリセット
+
+    // monsters テーブルから現在のステージ名のデータを取得するURL
+    string url = $"{supabaseUrl}/rest/v1/monsters?stage=eq.{stageName}&select=*";
+
+    using (UnityWebRequest request = UnityWebRequest.Get(url))
+    {
+        SetupHeaders(request);
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            string json = request.downloadHandler.text;
+            Debug.Log($"Supabaseからモンスター情報取得: {json}");
+
+            // JSONからボスのフラグを読み取る
+            monsterName = GetJsonValue(json, "name");
+            isSubBoss = GetJsonValue(json, "subboss").ToLower() == "true";
+            isLastBoss = GetJsonValue(json, "lastboss").ToLower() == "true";
+
+            // ボスフラグを見て、自動的に必要な正解数をセット！
+            if (isLastBoss)
+            {
+                requiredCorrectCount = 5; // ラスボスは5回
+            }
+            else if (isSubBoss)
+            {
+                requiredCorrectCount = 3; // サブボスは3回
+            }
+            else
+            {
+                requiredCorrectCount = 1; // 雑魚敵は1回
+            }
+
+            Debug.Log($"対戦相手: {monsterName} | クリアに必要な正解数: {requiredCorrectCount}回");
+        }
+        else
+        {
+            Debug.LogError("モンスター情報の取得に失敗しました: " + request.error);
+        }
+    }
+}
