@@ -1,5 +1,5 @@
 [Header("モンスターのステータス（Unity内のみで管理）")]
-public int monsterMaxHp = 150;  // モンスターの最大HP（インスペクターで調整してください）
+public int monsterMaxHp = 100;  // モンスターの最大HP（インスペクターで調整してください）
 public int monsterCurrentHp;    // モンスターの現在のHP
 
 void Start()
