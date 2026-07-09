@@ -1,0 +1,30 @@
+create or replace function initialize_player_battle(target_id int8, stage_type text)
+returns setof player
+language plpgsql
+as $$
+declare
+  start_hp int4;
+  damage_amount int4;
+begin
+  -- ステージの種類（stage_type）に応じて初期HPとミスダメージを条件分岐
+  if stage_type = 'sub_boss' then
+    start_hp := 2000;
+    damage_amount := 1000; -- サブボスは1ミス1000ダメージ
+  elsif stage_type = 'last_boss' then
+    start_hp := 3000;
+    damage_amount := 1000; -- ラスボスも1ミス1000ダメージ
+  else
+    start_hp := 800;       -- 通常ステージ
+    damage_amount := 100;
+  end if;
+
+  return query
+  update player
+  set max_hp = start_hp,
+      current_hp = start_hp,
+      miss_damage = damage_amount, -- ここでダメージ量も自動セット！
+      is_cleared = false
+  where id = target_id
+  returning *;
+end;
+$$;
