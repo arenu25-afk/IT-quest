@@ -1,0 +1,14 @@
+create or replace function initialize_player_battle(target_id int8)
+returns setof player
+language plpgsql
+as $$
+begin
+  -- 指定されたIDのプレイヤーの現在HP(current_hp)を最大HP(max_hp)にリセットし、クリア状況をfalseに戻す
+  return query
+  update player
+  set current_hp = max_hp,
+      is_cleared = false
+  where id = target_id
+  returning *;
+end;
+$$;
