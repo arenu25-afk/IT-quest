@@ -1,12 +1,23 @@
-create or replace function initialize_player_battle(target_id int8)
+create or replace function initialize_player_battle(target_id int8, stage_type text)
 returns setof player
 language plpgsql
 as $$
+declare
+  start_hp int4;
 begin
-  -- 指定されたIDのプレイヤーの現在HP(current_hp)を最大HP(max_hp)にリセットし、クリア状況をfalseに戻す
+  -- ステージの種類（stage_type）に応じて初期HPを条件分岐
+  if stage_type = 'sub_boss' then
+    start_hp := 2000;
+  elsif stage_type = 'last_boss' then
+    start_hp := 3000;
+  else
+    start_hp := 800; -- 通常ステージ
+  end if;
+
   return query
   update player
-  set current_hp = max_hp,
+  set max_hp = start_hp,
+      current_hp = start_hp,
       is_cleared = false
   where id = target_id
   returning *;
