@@ -1,0 +1,47 @@
+using System.Collections;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
+
+public class BattleManager : MonoBehaviour
+{
+    // あなたのSupabaseのURL
+    private string supabaseUrl = "https://wfbstrbvfjzwrhyzxvfs.supabase.co/rest/v1/rpc/initialize_player_battle";
+    // あなたのSupabaseのAnon Key（既存のコードからコピーしてください）
+    private string anonKey = "YOUR_SUPABASE_ANON_KEY"; 
+
+    // バトル開始時にこれを呼び出す
+    public void StartNewBattle(int playerId)
+    {
+        StartCoroutine(InitializePlayerBattleCoroutine(playerId));
+    }
+
+    private IEnumerator InitializePlayerBattleCoroutine(int playerId)
+    {
+        // 送信するJSONデータ（{"target_id": 1} のような形）
+        string jsonPayload = "{\"target_id\":" + playerId + "}";
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+
+        using (UnityWebRequest request = new UnityWebRequest(supabaseUrl, "POST"))
+        {
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            
+            // ヘッダーの設定
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("apikey", anonKey);
+            request.SetRequestHeader("Authorization", "Bearer " + anonKey);
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("プレイヤーのHP全回復とリセットに成功しました！");
+            }
+            else
+            {
+                Debug.LogError("リセット失敗: " + request.error);
+            }
+        }
+    }
+}
