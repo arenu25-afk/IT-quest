@@ -1,0 +1,38 @@
+[Header("モンスターのステータス（Unity内のみで管理）")]
+public int monsterMaxHp = 150;  // モンスターの最大HP（インスペクターで調整してください）
+public int monsterCurrentHp;    // モンスターの現在のHP
+
+void Start()
+{
+    // バトル開始時にモンスターのHPを満タンにする
+    InitializeMonster();
+}
+
+/// <summary>
+/// モンスターのHPを初期化する
+/// </summary>
+public void InitializeMonster()
+{
+    monsterCurrentHp = monsterMaxHp;
+    Debug.Log($"モンスターが現れた！ HP: {monsterCurrentHp}/{monsterMaxHp}");
+}
+
+/// <summary>
+/// クイズに正解したとき（モンスターにダメージを与える）
+/// </summary>
+/// <param name="damage">与えるダメージ量</param>
+public void OnCorrectAnswer(int damage)
+{
+    // HPを引き算する（0以下にはならないようにする）
+    monsterCurrentHp = Mathf.Max(0, monsterCurrentHp - damage);
+    Debug.Log($"正解！モンスターに {damage} ダメージ。残りHP: {monsterCurrentHp}");
+
+    // 画面のHPバー（UI）を使っている場合は、ここで更新処理を呼ぶ
+    // UpdateMonsterHPBar();
+
+    if (monsterCurrentHp <= 0)
+    {
+        Debug.Log("モンスターを倒した！ステージクリア！");
+        // ここにクリア演出や、次のステージへ進む処理を書く
+    }
+}
