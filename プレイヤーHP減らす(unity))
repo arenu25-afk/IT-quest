@@ -1,0 +1,38 @@
+// クイズに間違えた時に呼び出す関数
+public void OnWrongAnswer(int playerId, int currentHp, int damage)
+{
+    // 新しいHPを計算（0以下にならないようにする）
+    int newHp = Mathf.Max(0, currentHp - damage);
+    StartCoroutine(UpdatePlayerHpCoroutine(playerId, newHp));
+}
+
+private IEnumerator UpdatePlayerHpCoroutine(int playerId, int newHp)
+{
+    // playerテーブルの特定のIDを更新するURL
+    string url = "https://wfbstrbvfjzwrhyzxvfs.supabase.co/rest/v1/player?id=eq." + playerId;
+    
+    // 更新したいカラムと値をJSONにする
+    string jsonPayload = "{\"current_hp\":" + newHp + "}";
+    byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+
+    using (UnityWebRequest request = new UnityWebRequest(url, "PATCH")) // データの部分更新はPATCHを使います
+    {
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        
+        request.SetRequestHeader("Content-Type", "application/json");
+        request.SetRequestHeader("apikey", anonKey);
+        request.SetRequestHeader("Authorization", "Bearer " + anonKey);
+
+        yield return request.SendWebRequest();
+
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            Debug.Log("プレイヤーのHPを減少（更新）しました。新しいHP: " + newHp);
+        }
+        else
+        {
+            Debug.LogError("HP更新失敗: " + request.error);
+        }
+    }
+}
