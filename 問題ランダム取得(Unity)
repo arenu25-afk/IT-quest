@@ -1,0 +1,146 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.UI; // 従来のUI（Text）を使う場合。TextMeshProなら TMPro に変更してください
+
+[Serializable]
+public class QuizData
+{
+    public int id;
+    public string stage;
+    public string question;
+    public string choice1;
+    public string choice2;
+    public string choice3;
+    public string choice4;
+    public int answer;
+}
+
+public class QuizManager : MonoBehaviour
+{
+    [Header("Supabase設定")]
+    [SerializeField] private string supabaseUrl = "https://wfbstrbvfjzwrhyzxvfs.supabase.co";
+    [SerializeField] private string supabaseAnonKey = "ここにSupabaseでコピーした長いAnonKeyを貼る";
+
+    [Header("クイズ画面のUIオブジェクト")]
+    [SerializeField] private Text questionText;  // 問題文を表示するテキスト
+    [SerializeField] private Button[] choiceButtons; // 4つの選択肢ボタン（配列）
+
+    private List<QuizData> currentQuizzes = new List<QuizData>();
+    private int currentQuizIndex = 0;
+
+    void Start()
+    {
+        // 動作テスト：ゲームが始まったら「1-1」のザコ戦用クイズを17問取得してみる
+        StartCoroutine(FetchRandomQuizzes("1-1", 17));
+    }
+
+    /// <summary>
+    /// Supabaseからランダムなクイズを取得するコルーチン
+    /// </summary>
+    public IEnumerator FetchRandomQuizzes(string stageName, int limit)
+    {
+        string url = $"{supabaseUrl}/rest/v1/rpc/get_random_quizzes";
+        string jsonPayload = $"{{\"target_stage\": \"{stageName}\", \"quiz_limit\": {limit}}}";
+
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonPayload);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.SetRequestHeader("apikey", supabaseAnonKey);
+            request.SetRequestHeader("Authorization", $"Bearer {supabaseAnonKey}");
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                string responseText = request.downloadHandler.text;
+                // JSONの配列データをC#のリストに変換
+                currentQuizzes = JsonHelper.FromJson<QuizData>(responseText);
+                
+                if (currentQuizzes != null && currentQuizzes.Count > 0)
+                {
+                    currentQuizIndex = 0;
+                    ShowQuiz(); // 1問目を画面に表示
+                }
+            }
+            else
+            {
+                Debug.LogError($"クイズ取得エラー: {request.error}\n{request.downloadHandler.text}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// 現在のインデックスの問題を画面のUIにセットする
+    /// </summary>
+    private void ShowQuiz()
+    {
+        if (currentQuizIndex >= currentQuizzes.Count)
+        {
+            questionText.text = "ステージクリア！";
+            // ここにモンスターへの最終攻撃や、クリア画面への遷移処理を書く
+            return;
+        }
+
+        QuizData quiz = currentQuizzes[currentQuizIndex];
+        
+        // 問題文と選択肢のテキストを反映
+        questionText.text = quiz.question;
+        choiceButtons[0].GetComponentInChildren<Text>().text = quiz.choice1;
+        choiceButtons[1].GetComponentInChildren<Text>().text = quiz.choice2;
+        choiceButtons[2].GetComponentInChildren<Text>().text = quiz.choice3;
+        choiceButtons[3].GetComponentInChildren<Text>().text = quiz.choice4;
+
+        // 各ボタンをクリックしたときのイベントを再設定
+        for (int i = 0; i < choiceButtons.Length; i++)
+        {
+            int choiceNumber = i + 1; // 1, 2, 3, 4
+            choiceButtons[i].onClick.RemoveAllListeners();
+            choiceButtons[i].onClick.AddListener(() => OnChoiceSelected(choiceNumber));
+        }
+    }
+
+    /// <summary>
+    /// ボタンが押されたときに実行される正誤判定処理
+    /// </summary>
+    private void OnChoiceSelected(int selectedChoice)
+    {
+        QuizData quiz = currentQuizzes[currentQuizIndex];
+
+        if (selectedChoice == quiz.answer)
+        {
+            Debug.Log("正解！モンスターにダメージ！");
+            // ここにプレイヤーの攻撃演出などを入れる（例：モンスターのHPを減らす）
+        }
+        else
+        {
+            Debug.Log($"間違い！正解は {quiz.answer} です。プレイヤーがダメージ！");
+            // ここにプレイヤーの被ダメージ演出などを入れる（例：miss_damage分プレイヤーのHPを減らす）
+        }
+
+        // 1秒待って次の問題に進むなどの演出を入れるとゲームらしくなります
+        currentQuizIndex++;
+        ShowQuiz();
+    }
+}
+
+// 配列JSONパース用の補助クラス
+public static class JsonHelper
+{
+    public static List<T> FromJson<T>(string json)
+    {
+        string newJson = "{\"items\":" + json + "}";
+        Wrapper<T> wrapper = JsonUtility.FromJson<Wrapper<T>>(newJson);
+        return wrapper.items;
+    }
+
+    [Serializable]
+    private class Wrapper<T> { public List<T> items; }
+}
