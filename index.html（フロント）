@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ITクエスト 〜ITパスポートの勇者〜</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+
+    <!-- ===== タイトル画面 ===== -->
+    <section id="title" class="screen active">
+      <canvas id="tcv" width="960" height="540"></canvas>
+      <div class="logo">
+        <div class="logo-sub">ITパスポート学習RPG</div>
+        <h1><span>IT</span>クエスト</h1>
+        <div class="logo-tag">〜 姫を救い、世界を救い、勇者になれ 〜</div>
+      </div>
+      <div class="menu">
+        <button class="mbtn" id="btnNew">▶ はじめから</button>
+        <button class="mbtn" id="btnCont">▶ つづきから</button>
+        <button class="mbtn" id="btnRank">▶ ランキング</button>
+        <button class="mbtn" id="btnHow">▶ あそびかた</button>
+      </div>
+      <div class="foot">© IT QUEST　— ITパスポート試験 ストラテジ・マネジメント・テクノロジ —</div>
+    </section>
+
+    <!-- ===== マップ画面 ===== -->
+    <section id="map" class="screen">
+      <canvas id="mcv" width="960" height="528"></canvas>
+      <div id="mhud">
+        <div class="win hud-area">
+          <button id="areaPrev" class="mini">◀</button>
+          <div><div id="areaName">エリア1</div><div id="areaSub"></div></div>
+          <button id="areaNext" class="mini">▶</button>
+        </div>
+        <div class="win hud-clear">世界を救った回数 <b id="clearCnt">0</b></div>
+        <div class="win hud-stages" id="stageList"></div>
+        <div id="prompt" class="win"></div>
+        <div class="help">矢印 / WASD：移動　Z・Enter・Space：決定</div>
+      </div>
+      <div id="touch">
+        <div class="dpad">
+          <button data-k="up">▲</button><button data-k="left">◀</button><button data-k="right">▶</button><button data-k="down">▼</button>
+        </div>
+        <button id="abtn">A</button>
+      </div>
+    </section>
+
+    <!-- ===== バトル画面 ===== -->
+    <section id="battle" class="screen">
+      <canvas id="bcv" width="960" height="290"></canvas>
+      <div class="win bhud-hero"><div class="nm">勇者 <span id="heroName"></span></div>
+        <div class="hpline"><span>HP</span><div class="hpbar"><i id="hpFill"></i></div></div>
+        <div class="hpnum" id="hpNum">800 / 800</div></div>
+      <div class="win bhud-enemy"><div class="nm" id="enemyName">???</div><div id="enemyInfo"></div></div>
+      <div class="win bhud-timer"><div class="tlabel">のこり</div><div id="timeNum">80</div></div>
+      <div id="tbar"><i id="tfill"></i></div>
+      <div id="qbox" class="win">
+        <div id="qmain"><div id="qtag"></div><div id="qtext"></div></div>
+        <div id="qres"><div id="qverdict"></div><div id="qexp"></div></div>
+        <button id="nextBtn">つぎへ ▶</button>
+      </div>
+      <div id="choices">
+        <button class="ch" data-n="1"></button><button class="ch" data-n="2"></button>
+        <button class="ch" data-n="3"></button><button class="ch" data-n="4"></button>
+      </div>
+      <div id="banner"></div>
+    </section>
+
+    <!-- ===== 会話ウィンドウ ===== -->
+    <div id="dialog">
+      <div class="win dbox">
+        <canvas id="portrait" width="120" height="120"></canvas>
+        <div class="dtext"><div id="dname"></div><div id="dline"></div></div>
+        <div id="darrow">▼</div>
+      </div>
+    </div>
+
+    <!-- ===== ワーニング ===== -->
+    <div id="warn"><div>WARNING!</div><small id="warnSub"></small></div>
+
+    <!-- ===== リザルト ===== -->
+    <div id="result"><div class="win rbox">
+      <h2 id="rTitle"></h2><div id="rBody"></div><div class="rbtns" id="rBtns"></div>
+    </div></div>
+
+    <!-- ===== モーダル ===== -->
+    <div id="modal"><div class="win mbox"><div id="mBody"></div><div class="rbtns" id="mBtns"></div></div></div>
+
+    <button id="sndBtn" title="サウンド">♪</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
